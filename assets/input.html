@@ -138,14 +138,14 @@
     canvas.addEventListener("touchmove",  moveDraw,  { passive: false });
     canvas.addEventListener("touchend",   stopDraw);
 
-    // --- submit: send text or canvas PNG ---
+    // --- submit: send text or canvas PNG as a File ---
     document.getElementById("form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const body = new FormData();
       if (drawMode) {
-        const dataUrl = canvas.toDataURL("image/png");
-        if (dataUrl === "data:,") return;
-        body.append("answer", `[drawing] ${dataUrl}`);
+        const blob = await new Promise((res) => canvas.toBlob(res, "image/png"));
+        if (!blob) return;
+        body.append("answer", new File([blob], "drawing.png", { type: "image/png" }));
         ctx.clearRect(0, 0, canvas.width, canvas.height);
       } else {
         const text = textarea.value.trim();

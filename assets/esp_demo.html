@@ -76,7 +76,7 @@
     });
 
     let animating = false;
-    let ready = false;
+    let lastChecked = new Date(0).toISOString();
 
     function runOnce() {
       return new Promise((resolve) => {
@@ -100,19 +100,22 @@
       });
     }
 
+    function latestDate(answers) {
+      return answers.reduce((max, a) => a.submittedAt > max ? a.submittedAt : max, new Date(0).toISOString());
+    }
+
     async function init() {
-      // Silently drain anything already queued when the page opens.
-      const data = await fetch("/answers").then((r) => r.json());
-      if (data.queued) await fetch("/commit", { method: "POST" });
-      ready = true;
+      const answers = await fetch("/answers").then((r) => r.json());
+      lastChecked = latestDate(answers);
     }
 
     async function poll() {
-      if (!ready || animating) return;
-      const data = await fetch("/answers").then((r) => r.json());
-      if (data.queued) {
+      if (animating) return;
+      const answers = await fetch("/answers").then((r) => r.json());
+      const latest = latestDate(answers);
+      if (latest > lastChecked) {
         await runOnce();
-        await fetch("/commit", { method: "POST" });
+        lastChecked = latest;
       }
     }
 

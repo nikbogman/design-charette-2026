@@ -1,9 +1,16 @@
 {
+  "name": "design-charrete",
   "type": "module",
   "scripts": {
-    "dev": "bun run --hot index.js"
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --minify",
+    "cf-typegen": "wrangler types --env-interface CloudflareBindings"
   },
   "dependencies": {
     "hono": "^4.12.14"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260415.1",
+    "wrangler": "^4.4.0"
   }
 }
