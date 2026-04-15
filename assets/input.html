@@ -5,111 +5,191 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Design Charrette</title>
   <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+    }
+
     body {
-      font-family: sans-serif;
-      max-width: 640px;
-      margin: 80px auto;
-      padding: 0 16px;
+      background: #040d1a;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', sans-serif;
+      overflow: auto;
     }
-    h1 { font-size: 1.5rem; margin-bottom: 1rem; }
-    textarea {
-      width: 100%;
-      height: 140px;
-      padding: 10px;
-      font-size: 1rem;
-      box-sizing: border-box;
-      resize: vertical;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+
+    .panel {
+      position: relative;
+      width: min(1100px, 96vw);
+      background: url('bg_input.png') center / 100% 100% no-repeat;
+      padding: 64px 88px 56px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
-    #canvas {
-      display: none;
+
+    .question {
+      color: #7ee8ff;
+      font-size: 1.15rem;
+      font-weight: 600;
+      text-align: center;
+      letter-spacing: 0.03em;
+      text-shadow: 0 0 12px rgba(100, 220, 255, 0.5);
+      padding-top: 24px;
+    }
+
+    .hint {
+      color: #4a9ab5;
+      font-size: 0.78rem;
+      text-align: center;
+      letter-spacing: 0.05em;
+    }
+
+    canvas {
       width: 100%;
-      height: 280px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
+      height: 480px;
+      background: rgba(4, 18, 40, 0.75);
       cursor: crosshair;
       touch-action: none;
+      display: block;
     }
+
+    textarea {
+      width: 100%;
+      height: 480px;
+      background: rgba(4, 18, 40, 0.75);
+      border: none;
+      outline: none;
+      resize: none;
+      color: #7ee8ff;
+      font-size: 1rem;
+      font-family: inherit;
+      padding: 12px;
+      display: none;
+    }
+    textarea::placeholder { color: #2a6a85; }
+
     .toolbar {
       display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+    }
+
+    .left-btns {
+      display: flex;
       gap: 8px;
-      margin-top: 10px;
-      flex-wrap: wrap;
     }
-    button {
-      padding: 8px 20px;
-      font-size: 1rem;
+
+    .ghost-btn {
+      background: transparent;
+      border: 1.5px solid #00cfff;
+      color: #00cfff;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      padding: 7px 28px;
       cursor: pointer;
-      background: #1a1a1a;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
+      clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+      text-shadow: 0 0 8px rgba(0, 207, 255, 0.6);
+      box-shadow: 0 0 10px rgba(0, 207, 255, 0.2) inset;
+      transition: box-shadow 0.15s, background 0.15s;
     }
-    button:hover { background: #333; }
-    #toggle-btn.active { background: #b91c1c; }
+    .ghost-btn:hover {
+      background: rgba(0, 207, 255, 0.1);
+      box-shadow: 0 0 18px rgba(0, 207, 255, 0.35) inset;
+    }
+    .ghost-btn:active { background: rgba(0, 207, 255, 0.2); }
+
+    .launch-btn {
+      background: transparent;
+      border: 1.5px solid #00cfff;
+      color: #00cfff;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      padding: 7px 28px;
+      cursor: pointer;
+      clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+      text-shadow: 0 0 8px rgba(0, 207, 255, 0.6);
+      box-shadow: 0 0 10px rgba(0, 207, 255, 0.2) inset;
+      transition: box-shadow 0.15s, background 0.15s;
+    }
+    .launch-btn:hover {
+      background: rgba(0, 207, 255, 0.1);
+      box-shadow: 0 0 18px rgba(0, 207, 255, 0.35) inset;
+    }
+    .launch-btn:active {
+      background: rgba(0, 207, 255, 0.2);
+    }
   </style>
 </head>
 <body>
-  <h1>What is your design idea for this project?</h1>
-  <form id="form">
-    <textarea id="answer" name="answer" placeholder="Type your answer here..."></textarea>
+  <div class="panel">
+    <p class="question">What is your design idea for this project?</p>
+    <p class="hint">(Draw your answer)</p>
     <canvas id="canvas"></canvas>
+    <textarea id="textarea" placeholder="Type your answer here..."></textarea>
     <div class="toolbar">
-      <button type="button" id="toggle-btn">Draw</button>
-      <button type="button" id="clear-btn" style="display:none">Clear</button>
-      <button type="submit">Send</button>
+      <div class="left-btns">
+        <button class="ghost-btn" id="toggle-btn">TEXT</button>
+        <button class="ghost-btn" id="clear-btn">CLEAR</button>
+      </div>
+      <button class="launch-btn" id="launch">LAUNCH</button>
     </div>
-  </form>
+  </div>
 
   <script>
-    const textarea = document.getElementById("answer");
-    const canvas   = document.getElementById("canvas");
+    const canvas    = document.getElementById("canvas");
+    const textarea  = document.getElementById("textarea");
     const toggleBtn = document.getElementById("toggle-btn");
     const clearBtn  = document.getElementById("clear-btn");
-    const ctx = canvas.getContext("2d");
-    let drawing = false;
-    let drawMode = false;
+    const ctx       = canvas.getContext("2d");
+    let drawing     = false;
+    let drawMode    = true;
 
-    // --- resize canvas to its CSS size (called every time draw mode opens) ---
     function resizeCanvas() {
       const rect = canvas.getBoundingClientRect();
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       canvas.width  = rect.width;
       canvas.height = rect.height;
-      // styles are reset when dimensions change — reapply
-      ctx.strokeStyle = "#dc2626";
+      ctx.putImageData(imageData, 0, 0);
+      applyStyles();
+    }
+
+    function applyStyles() {
+      ctx.strokeStyle = "#00cfff";
       ctx.lineWidth   = 3;
       ctx.lineCap     = "round";
       ctx.lineJoin    = "round";
     }
 
-    // --- toggle between text and draw ---
     toggleBtn.addEventListener("click", () => {
       drawMode = !drawMode;
-      textarea.style.display  = drawMode ? "none" : "";
-      canvas.style.display    = drawMode ? "block" : "none";
-      clearBtn.style.display  = drawMode ? "" : "none";
-      toggleBtn.textContent   = drawMode ? "Text" : "Draw";
-      toggleBtn.classList.toggle("active", drawMode);
+      canvas.style.display   = drawMode ? "block" : "none";
+      textarea.style.display = drawMode ? "none"  : "block";
+      toggleBtn.textContent  = drawMode ? "TEXT"  : "DRAW";
       if (drawMode) resizeCanvas();
+      else textarea.focus();
     });
 
     clearBtn.addEventListener("click", () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.strokeStyle = "#dc2626";
-      ctx.lineWidth   = 3;
-      ctx.lineCap     = "round";
-      ctx.lineJoin    = "round";
+      if (drawMode) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        applyStyles();
+      } else {
+        textarea.value = "";
+        textarea.focus();
+      }
     });
 
-    // --- pointer helpers (works for mouse and touch) ---
     function getPos(e) {
       const rect = canvas.getBoundingClientRect();
       const src  = e.touches ? e.touches[0] : e;
-      return {
-        x: src.clientX - rect.left,
-        y: src.clientY - rect.top,
-      };
+      return { x: src.clientX - rect.left, y: src.clientY - rect.top };
     }
 
     function startDraw(e) {
@@ -138,24 +218,27 @@
     canvas.addEventListener("touchmove",  moveDraw,  { passive: false });
     canvas.addEventListener("touchend",   stopDraw);
 
-    // --- submit: send text or canvas PNG as a File ---
-    document.getElementById("form").addEventListener("submit", async (e) => {
-      e.preventDefault();
+    document.getElementById("launch").addEventListener("click", async () => {
       const body = new FormData();
       if (drawMode) {
         const blob = await new Promise((res) => canvas.toBlob(res, "image/png"));
         if (!blob) return;
         body.append("answer", new File([blob], "drawing.png", { type: "image/png" }));
+        await fetch("/submit", { method: "POST", body });
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        applyStyles();
       } else {
         const text = textarea.value.trim();
         if (!text) return;
         body.append("answer", text);
+        await fetch("/submit", { method: "POST", body });
         textarea.value = "";
         textarea.focus();
       }
-      await fetch("/submit", { method: "POST", body });
     });
+
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
   </script>
 </body>
 </html>
