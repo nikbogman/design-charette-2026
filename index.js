@@ -1,41 +1,32 @@
+import { Hono } from "hono";
+import { serveStatic } from "hono/bun";
+
 const answers = [];
-const queue   = [];   // drawings waiting for LED animation
+const queue   = [];
 
-const server = Bun.serve({
-    port: 3000,
+const app = new Hono();
 
-    routes: {
-        "/": Bun.file("input.html"),
-        "/input.html": Bun.file("input.html"),
-        "/output.html": Bun.file("output.html"),
-        "/esp_demo.html": Bun.file("esp_demo.html"),
+app.get("/",            serveStatic({ path: "./input.html" }));
+app.get("/input.html",  serveStatic({ path: "./input.html" }));
+app.get("/output.html", serveStatic({ path: "./output.html" }));
+app.get("/esp_demo.html", serveStatic({ path: "./esp_demo.html" }));
 
-        "/submit": {
-            POST: async (req) => {
-                const body = await req.formData();
-                const answer = body.get("answer")?.trim();
-                if (answer) queue.push(answer);
-                return new Response(null, { status: 204 });
-            },
-        },
+app.get("/answers", (c) => c.json({ answers, queued: queue[0] ?? null }));
 
-        "/answers": {
-            GET: () => Response.json({ answers, queued: queue[0] ?? null }),
-        },
-
-        "/commit": {
-            POST: () => {
-                const item = queue.shift();
-                if (item) answers.push(item);
-                return new Response(null, { status: 204 });
-            },
-        },
-    },
-
-    error(err) {
-        console.error(err);
-        return new Response("Internal Server Error", { status: 500 });
-    },
+app.post("/submit", async (c) => {
+    const body   = await c.req.formData();
+    const answer = body.get("answer")?.trim();
+    if (answer) queue.push(answer);
+    return c.body(null, 204);
 });
 
-console.log(`Server running at http://localhost:${server.port}`);
+app.post("/commit", (c) => {
+    const item = queue.shift();
+    if (item) answers.push(item);
+    return c.body(null, 204);
+});
+
+export default {
+    port: 3000,
+    fetch: app.fetch,
+};

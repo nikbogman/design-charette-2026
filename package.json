@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "dev": "bun run --hot index.js"
+  },
+  "dependencies": {
+    "hono": "^4.12.14"
+  }
+}

@@ -42,3 +42,9 @@ make a separate page that has a sequence of
 
 @@@@@@@@@ 
 make also the loadgin responsible, not just pooping from noting
+
+
+i want to deploy to vercel beacsue they have vercel blob
+
+bun only is not supported
+have to use hono
