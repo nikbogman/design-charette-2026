@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ESP Demo</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      background: #111;
+    }
+
+    .leds {
+      display: flex;
+      gap: 16px;
+    }
+
+    .led {
+      width: 60px;
+      height: 60px;
+      border-radius: 6px;
+      background: #2a2a2a;
+      border: 2px solid #444;
+      transition: background 0.08s ease, box-shadow 0.08s ease;
+    }
+
+    .led.on {
+      background: #dc2626;
+      border-color: #ef4444;
+      box-shadow: 0 0 16px 4px rgba(220, 38, 38, 0.6);
+    }
+
+    .label {
+      color: #555;
+      font-size: 0.7rem;
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    .led.on + .label {
+      color: #ef4444;
+    }
+  </style>
+</head>
+<body>
+  <div class="leds" id="leds"></div>
+
+  <script>
+    const COUNT = 10;
+    const INTERVAL_MS = 200;
+
+    const container = document.getElementById("leds");
+
+    // Build LED elements
+    const leds = Array.from({ length: COUNT }, (_, i) => {
+      const wrap = document.createElement("div");
+
+      const led = document.createElement("div");
+      led.className = "led";
+
+      const label = document.createElement("div");
+      label.className = "label";
+      label.textContent = `LED${i + 1}`;
+
+      wrap.appendChild(led);
+      wrap.appendChild(label);
+      container.appendChild(wrap);
+
+      return led;
+    });
+
+    let animating = false;
+    let ready = false;
+
+    function runOnce() {
+      return new Promise((resolve) => {
+        animating = true;
+        let step = 0;
+
+        const tick = setInterval(() => {
+          if (step > 0) leds[step - 1].classList.remove("on");
+          leds[step].classList.add("on");
+          step++;
+
+          if (step === COUNT) {
+            clearInterval(tick);
+            setTimeout(() => {
+              leds[COUNT - 1].classList.remove("on");
+              animating = false;
+              resolve();
+            }, INTERVAL_MS * 2);
+          }
+        }, INTERVAL_MS);
+      });
+    }
+
+    async function init() {
+      // Silently drain anything already queued when the page opens.
+      const data = await fetch("/answers").then((r) => r.json());
+      if (data.queued) await fetch("/commit", { method: "POST" });
+      ready = true;
+    }
+
+    async function poll() {
+      if (!ready || animating) return;
+      const data = await fetch("/answers").then((r) => r.json());
+      if (data.queued) {
+        await runOnce();
+        await fetch("/commit", { method: "POST" });
+      }
+    }
+
+    init();
+    setInterval(poll, 1000);
+  </script>
+</body>
+</html>

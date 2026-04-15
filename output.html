@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Answers</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 640px;
+      margin: 80px auto;
+      padding: 0 16px;
+    }
+    h1 { font-size: 1.5rem; margin-bottom: 1rem; }
+    ul { padding-left: 1.2rem; }
+    li {
+      margin-bottom: 0.6rem;
+      line-height: 1.5;
+    }
+    li img {
+      display: block;
+      max-width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-top: 4px;
+    }
+    a {
+      display: inline-block;
+      margin-top: 1.5rem;
+      color: #1a1a1a;
+    }
+
+    /* LED strip */
+    #led-strip { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Submitted Answers</h1>
+
+  <div id="led-strip">
+    <!-- 10 LEDs injected by JS -->
+  </div>
+
+  <ul id="list">
+    <li>Loading...</li>
+  </ul>
+  <a href="/">Back to question</a>
+
+  <script>
+    const COUNT = 10;
+    const STEP_MS = 200;
+
+    // Build LED elements
+    const strip = document.getElementById("led-strip");
+    const leds = Array.from({ length: COUNT }, () => {
+      const el = document.createElement("div");
+      el.className = "led";
+      strip.appendChild(el);
+      return el;
+    });
+
+    let animating = false;
+    let ready = false;   // true once the initial state has been absorbed
+
+    function runLedAnimation() {
+      return new Promise((resolve) => {
+        animating = true;
+        strip.classList.add("visible");
+        let step = 0;
+
+        const tick = setInterval(() => {
+          if (step > 0) leds[step - 1].classList.remove("on");
+          leds[step].classList.add("on");
+          step++;
+
+          if (step === COUNT) {
+            clearInterval(tick);
+            // brief pause on LED 10, then clean up
+            setTimeout(() => {
+              leds[COUNT - 1].classList.remove("on");
+              strip.classList.remove("visible");
+              animating = false;
+              resolve();
+            }, STEP_MS * 2);
+          }
+        }, STEP_MS);
+      });
+    }
+
+    async function init() {
+      // Silently drain anything already queued when the page first loads.
+      const res  = await fetch("/answers");
+      const data = await res.json();
+      if (data.queued) await fetch("/commit", { method: "POST" });
+      const res2  = await fetch("/answers");
+      const data2 = await res2.json();
+      renderList(data2.answers);
+      ready = true;
+    }
+
+    async function refresh() {
+      if (!ready || animating) return;
+
+      const res  = await fetch("/answers");
+      const data = await res.json();
+
+      if (data.queued) {
+        await runLedAnimation();
+        await fetch("/commit", { method: "POST" });
+        const res2  = await fetch("/answers");
+        const data2 = await res2.json();
+        renderList(data2.answers);
+      } else {
+        renderList(data.answers);
+      }
+    }
+
+    function renderList(answers) {
+      const list = document.getElementById("list");
+      list.innerHTML = answers.length
+        ? answers.map(renderAnswer).join("")
+        : "<li>No answers yet.</li>";
+    }
+
+    function renderAnswer(a) {
+      if (a.startsWith("[drawing] ")) {
+        const dataUrl = a.slice("[drawing] ".length);
+        return `<li><img src="${dataUrl}" alt="drawing" /></li>`;
+      }
+      return `<li>${escapeHtml(a)}</li>`;
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    init();
+    setInterval(refresh, 1000);
+  </script>
+</body>
+</html>
