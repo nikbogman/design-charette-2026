@@ -53,12 +53,29 @@ app.post("/submit", async (c) => {
     return c.body(null, 204);
 });
 
+app.delete("/answers/:submittedAt", async (c) => {
+    const submittedAt = decodeURIComponent(c.req.param("submittedAt"));
+    const answers = await kvGetAnswers(c.env.KVDB);
+    const index = answers.findIndex((a) => a.submittedAt === submittedAt);
+    if (index === -1) return c.notFound();
+
+    const [removed] = answers.splice(index, 1);
+    if (removed.type === "drawing") {
+        await c.env.BUCKET.delete(removed.key);
+    }
+
+    await c.env.KVDB.put(KVDB_ANSWERS, JSON.stringify(answers));
+    return c.body(null, 204);
+});
+
 app.get("/drawings/:key", async (c) => {
     const obj = await c.env.BUCKET.get(c.req.param("key"));
     if (!obj) return c.notFound();
-    const headers = new Headers();
-    obj.writeHttpMetadata(headers);
-    return new Response(obj.body as ReadableStream, { headers });
+    const raw = new Headers();
+    obj.writeHttpMetadata(raw);
+    const headers: Record<string, string> = {};
+    raw.forEach((value, key) => { headers[key] = value; });
+    return c.body(obj.body as ReadableStream, 200, headers);
 });
 
 export default app;

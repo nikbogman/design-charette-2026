@@ -19,12 +19,20 @@
     }
 
     ul {
-      padding-left: 1.2rem;
+      padding-left: 0;
+      list-style: none;
     }
 
     li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
       margin-bottom: 0.6rem;
       line-height: 1.5;
+    }
+
+    li .content {
+      flex: 1;
     }
 
     li img {
@@ -33,6 +41,39 @@
       border: 1px solid #ccc;
       border-radius: 4px;
       margin-top: 4px;
+    }
+
+    .btn-delete {
+      flex-shrink: 0;
+      background: none;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 2px 6px;
+      color: #999;
+      line-height: 1.5;
+    }
+
+    .btn-delete:hover {
+      border-color: #e55;
+      color: #e55;
+    }
+
+    .btn-clear {
+      margin-bottom: 1rem;
+      background: none;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      padding: 4px 10px;
+      color: #666;
+    }
+
+    .btn-clear:hover {
+      border-color: #e55;
+      color: #e55;
     }
 
     a {
@@ -45,6 +86,7 @@
 
 <body>
   <h1>Submitted Answers</h1>
+  <button class="btn-clear" onclick="clearAll()">Clear all</button>
   <ul id="list">
     <li>Loading...</li>
   </ul>
@@ -59,9 +101,22 @@
     }
 
     function renderAnswer(a) {
-      return a.type === "drawing"
-        ? `<li><img src="/drawings/${a.key}" alt="drawing" /></li>`
-        : `<li>${escapeHtml(a.value)}</li>`;
+      const at = encodeURIComponent(a.submittedAt);
+      const body = a.type === "drawing"
+        ? `<img src="/drawings/${a.key}" alt="drawing" />`
+        : escapeHtml(a.value);
+      return `<li data-at="${at}"><span class="content">${body}</span><button class="btn-delete" onclick="deleteAnswer('${at}')" aria-label="Delete">&#128465;</button></li>`;
+    }
+
+    async function deleteAnswer(encodedAt) {
+      const res = await fetch(`/answers/${encodedAt}`, { method: "DELETE" });
+      if (res.ok) document.querySelector(`[data-at="${encodedAt}"]`)?.remove();
+    }
+
+    async function clearAll() {
+      const answers = await fetch("/answers").then((r) => r.json());
+      await Promise.all(answers.map((a) => deleteAnswer(encodeURIComponent(a.submittedAt))));
+      if (!list.children.length) list.innerHTML = "<li>No answers yet.</li>";
     }
 
     async function init() {
@@ -74,6 +129,8 @@
       const answers = await fetch("/answers").then((r) => r.json());
       const fresh = answers.filter((a) => a.submittedAt > lastDate);
       if (!fresh.length) return;
+      const hadPlaceholder = list.querySelector("li:only-child")?.textContent === "No answers yet.";
+      if (hadPlaceholder) list.innerHTML = "";
       fresh.forEach((a) => list.insertAdjacentHTML("beforeend", renderAnswer(a)));
       lastDate = fresh.at(-1).submittedAt;
     }

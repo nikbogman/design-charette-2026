@@ -1,21 +1,36 @@
+# design-charrette
+
+A Cloudflare Worker built with [Hono](https://hono.dev/), backed by R2 storage and KV.
+
+## Requirements
+
+- [Node.js](https://nodejs.org/) v18+
+- [npm](https://www.npmjs.com/) v9+
+- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/) (installed via dev dependencies)
+
+## Getting Started
+
+Install dependencies and start the local dev server:
+
 ```txt
 npm install
 npm run dev
 ```
 
+## Deployment
+
+Deploy to Cloudflare Workers:
+
 ```txt
 npm run deploy
 ```
 
-[For generating/synchronizing types based on your Worker configuration run](https://developers.cloudflare.com/workers/wrangler/commands/#types):
+## Type Generation
+
+Sync TypeScript types from your Worker configuration:
 
 ```txt
 npm run cf-typegen
 ```
 
-Pass the `CloudflareBindings` as generics when instantiation `Hono`:
-
-```ts
-// src/index.ts
-const app = new Hono<{ Bindings: CloudflareBindings }>()
-```
+See the [Wrangler types docs](https://developers.cloudflare.com/workers/wrangler/commands/#types) for more details.
