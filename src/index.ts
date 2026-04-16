@@ -26,6 +26,11 @@ app.get("/answers", async (c) => {
     return c.json(answers);
 });
 
+app.get("/answers/length", async (c) => {
+    const answers = await kvGetAnswers(c.env.KVDB);
+    return c.text(answers.length.toString());
+})
+
 app.post("/submit", async (c) => {
     const body = await c.req.formData();
     const field = body.get("answer");
